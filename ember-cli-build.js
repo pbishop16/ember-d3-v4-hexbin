@@ -19,6 +19,16 @@ module.exports = function(defaults) {
   // modules that you would like to import into your application
   // please specify an object with the list of modules as keys
   // along with the exports of each module as its value.
+  app.import('node_modules/d3-hexbin/build/d3-hexbin.js', {
+    using: [
+      { transformation: 'amd', as: 'd3-hexbin' }
+    ]
+  });
+  app.import('node_modules/d3/build/d3.js', {
+    using: [
+      { transformation: 'amd', as: 'd3' }
+    ]
+  });
 
   return app.toTree();
 };
