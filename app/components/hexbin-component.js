@@ -1,6 +1,8 @@
 import D3Base from './d3-base';
 import d3 from 'd3';
 import d3Hexbin from 'd3-hexbin';
+import $ from 'jquery';
+import { next } from '@ember/runloop';
 
 export default D3Base.extend({
   tagName: 'svg',
@@ -23,12 +25,44 @@ export default D3Base.extend({
   didInsertElement() {
     this._super(...arguments);
 
-    this.setLayout();
-    this.setBaseProperties();
-    this.setColor();
-    this.setHexbin();
-    this.setPlane();
-    this.buildChart();
+    const {
+      width,
+      height,
+      drawChart,
+      clearElements,
+    } = this.getProperties(
+      'width',
+      'height',
+      'drawChart',
+      'clearElements'
+    );
+    const initPosX = (width / 2),
+          initPosY = (height / 2);
+
+    drawChart(initPosX, initPosY, this);
+
+      $('svg').mousemove((event) => {
+        next(() => {
+          clearElements();
+          drawChart(event.clientX, event.clientY, this);
+        });
+      });
+  },
+
+  clearElements() {
+    $('#clip').remove();
+    $('rect').remove();
+    $('g').remove();
+    $('path').remove();
+  },
+
+  drawChart(posX, posY, $this) {
+    $this.setLayout();
+    $this.setBaseProperties(posX, posY);
+    $this.setColor();
+    $this.setHexbin();
+    $this.setPlane();
+    $this.buildChart();
   },
 
   setLayout() {
@@ -58,18 +92,10 @@ export default D3Base.extend({
     });
   },
 
-  setBaseProperties() {
-    const {
-      height,
-      width,
-      range,
-    } = this.getProperties(
-      'height',
-      'width',
-      'range',
-    );
-    const randomX = d3.randomNormal(width / 2, 80),
-          randomY = d3.randomNormal(height / 2, 80),
+  setBaseProperties(posX, posY) {
+    const range = this.get('range');
+    const randomX = d3.randomNormal(posX, 80),
+          randomY = d3.randomNormal(posY, 80),
           points = d3.range(range).map(() => [randomX(), randomY()]);
 
     this.set('points', points);
@@ -154,13 +180,14 @@ export default D3Base.extend({
       .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
       .attr('fill', (d) => color(d.length));
 
-    g.append('g')
-      .attr('class', 'axis axis--y')
-      .attr(d3.axisLeft(y).tickSizeOuter(-width));
+      g.append('g')
+        .attr('class', 'axis axis--y')
+        .attr('transform', `translate(0, 0)`)
+        .call(d3.axisLeft(y).tickSizeOuter(-width));
 
-    g.append('g')
-      .attr('class', 'axis axis--x')
-      .attr('transform', `translate(0, ${height})`)
-      .call(d3.axisBottom(x).tickSizeOuter(-height));
+      g.append('g')
+        .attr('class', 'axis axis--x')
+        .attr('transform', `translate(0, ${height})`)
+        .call(d3.axisBottom(x).tickSizeOuter(-height));
   },
 });
